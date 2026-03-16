@@ -24,8 +24,6 @@ build_team_games <- function(reg_season_results) {
       OppTO = LTO,
       OppFTA = LFTA)
 
-  FGA - OR + TO + 0.475 * FTA
-
   loser_rows <- reg_season_results %>%
     transmute(
       Season,
