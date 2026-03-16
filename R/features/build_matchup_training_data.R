@@ -2,28 +2,28 @@ library(tidyverse)
 
 build_matchup_training_data <- function(tourney_results, team_season_features, seeds) {
 
-  # Standardize tournament games so Team1 always has the lower TeamID
+  valid_seasons <- sort(unique(team_season_features$Season))
+
   matchup_base <- tourney_results %>%
+    filter(Season %in% valid_seasons) %>%
     transmute(
       Season,
       Team1 = pmin(WTeamID, LTeamID),
       Team2 = pmax(WTeamID, LTeamID),
       Outcome = if_else(WTeamID < LTeamID, 1, 0))
 
-  # Team season features for Team1
   team1_features <- team_season_features %>%
     rename_with(
       .fn = ~ paste0("Team1_", .x),
       .cols = -Season)
 
-  # Team season features for Team2
   team2_features <- team_season_features %>%
     rename_with(
       .fn = ~ paste0("Team2_", .x),
       .cols = -Season)
 
-  # Clean numeric seed value
   seeds_clean <- seeds %>%
+    filter(Season %in% valid_seasons) %>%
     mutate(
       SeedNum = readr::parse_number(Seed)) %>%
     select(Season, TeamID, Seed, SeedNum)
