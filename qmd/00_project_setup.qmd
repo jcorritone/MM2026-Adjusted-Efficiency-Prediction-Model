@@ -1,5 +1,5 @@
 ---
-title: "Project Setup"
+title: "Project Workspace"
 format: html
 ---
 
@@ -14,9 +14,15 @@ library(brms)
 ```
 
 ```{r}
-#| label: Confirm project root and import data
+#| label: import-data
 
-here()
 source(here("R", "data", "load_data.R"))
 data <- load_data()
+```
+
+```{r}
+#| label: build-team-games
+
+source(here("R", "data", "build_team_games.R"))
+team_games <- build_team_games(data$reg_season_results)
 ```
