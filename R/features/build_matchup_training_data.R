@@ -1,6 +1,6 @@
 library(tidyverse)
 
-build_matchup_training_data <- function(tourney_results, team_season_features, seeds, team_ridge_ratings = NULL) {
+build_matchup_training_data <- function(tourney_results, team_season_features, seeds, team_strength_ratings_ridge = NULL) {
 
   valid_seasons <- sort(unique(team_season_features$Season))
 
@@ -64,14 +64,14 @@ build_matchup_training_data <- function(tourney_results, team_season_features, s
       AdjTempoDiff = Team1_AdjTempo - Team2_AdjTempo,
       SOSDiff = Team1_SOS - Team2_SOS)
     
-  if (!is.null(team_ridge_ratings)) {
+  if (!is.null(team_strength_ratings_ridge)) {
 
-    team1_ridge <- team_ridge_ratings %>%
+    team1_ridge <- team_strength_ratings_ridge %>%
       rename(
         Team1 = TeamID,
         Team1_RidgeRating = RidgeRating)
 
-    team2_ridge <- team_ridge_ratings %>%
+    team2_ridge <- team_strength_ratings_ridge %>%
       rename(
         Team2 = TeamID,
         Team2_RidgeRating = RidgeRating)
