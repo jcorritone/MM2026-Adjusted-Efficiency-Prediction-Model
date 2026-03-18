@@ -1,67 +1,65 @@
-build_team_season_features_recency <- function(team_games) {
+build_matchup_training_data_recency <- function(tourney_results, team_season_features, seeds) {
 
-  team_games <- team_games %>%
-    group_by(Season) %>%
+  valid_seasons <- sort(unique(team_season_features$Season))
+
+  matchup_base <- tourney_results %>%
+    filter(Season %in% valid_seasons) %>%
+    transmute(
+      Season,
+      Team1 = pmin(WTeamID, LTeamID),
+      Team2 = pmax(WTeamID, LTeamID),
+      Outcome = if_else(WTeamID < LTeamID, 1, 0)
+    )
+
+  team1_features <- team_season_features %>%
+    rename_with(
+      .fn = ~ paste0("Team1_", .x),
+      .cols = -Season
+    )
+
+  team2_features <- team_season_features %>%
+    rename_with(
+      .fn = ~ paste0("Team2_", .x),
+      .cols = -Season
+    )
+
+  seeds_clean <- seeds %>%
+    filter(Season %in% valid_seasons) %>%
     mutate(
-      RecencyWeight = ((DayNum - min(DayNum)) / (max(DayNum) - min(DayNum))) + 0.25
+      SeedNum = readr::parse_number(Seed)
     ) %>%
-    ungroup() %>%
+    select(Season, TeamID, Seed, SeedNum)
+
+  team1_seeds <- seeds_clean %>%
+    rename(
+      Team1 = TeamID,
+      Team1_Seed = Seed,
+      Team1_SeedNum = SeedNum
+    )
+
+  team2_seeds <- seeds_clean %>%
+    rename(
+      Team2 = TeamID,
+      Team2_Seed = Seed,
+      Team2_SeedNum = SeedNum
+    )
+
+  matchup_training_data_recency <- matchup_base %>%
+    left_join(team1_features, by = c("Season", "Team1" = "Team1_TeamID")) %>%
+    left_join(team2_features, by = c("Season", "Team2" = "Team2_TeamID")) %>%
+    left_join(team1_seeds, by = c("Season", "Team1")) %>%
+    left_join(team2_seeds, by = c("Season", "Team2")) %>%
     mutate(
-      TeamPossessions = TeamFGA - TeamOR + TeamTO + 0.44 * TeamFTA,
-      OppPossessions = OppFGA - OppOR + OppTO + 0.44 * OppFTA,
-      TeamAdjPossessions = TeamPossessions * (40 / (40 + 5 * NumOT)),
-      OppAdjPossessions = OppPossessions * (40 / (40 + 5 * NumOT)),
-      OffEff = TeamScore / TeamPossessions,
-      DefEff = OppScore / OppPossessions,
-      NetEff = OffEff - DefEff
-    )
+      SeedDiff = Team1_SeedNum - Team2_SeedNum,
 
-  weighted_mean <- function(x, w) {
-    sum(x * w, na.rm = TRUE) / sum(w[!is.na(x)])
-  }
-
-  team_season_features_recency <- team_games %>%
-    group_by(Season, TeamID) %>%
-    summarise(
-      GamesPlayed = n(),
-      Wins = sum(Win),
-      WinPct = mean(Win),
-      AvgTeamScore = mean(TeamScore),
-      AvgOppScore = mean(OppScore),
-      AvgPointDiff = mean(PointDiff),
-      AdjTempo = mean((TeamAdjPossessions + OppAdjPossessions) / 2),
-      OffEff = mean(OffEff),
-      DefEff = mean(DefEff),
-      NetEff = mean(NetEff),
-
-      RecencyWinPct = weighted_mean(Win, RecencyWeight),
-      RecencyAvgPointDiff = weighted_mean(PointDiff, RecencyWeight),
-      RecencyAdjTempo = weighted_mean((TeamAdjPossessions + OppAdjPossessions) / 2, RecencyWeight),
-      RecencyOffEff = weighted_mean(OffEff, RecencyWeight),
-      RecencyDefEff = weighted_mean(DefEff, RecencyWeight),
-      RecencyNetEff = weighted_mean(NetEff, RecencyWeight),
-
-      .groups = "drop"
-    )
-
-  recency_sos <- team_games %>%
-    select(Season, TeamID, OpponentID, RecencyWeight) %>%
-    left_join(
-      team_season_features_recency %>%
-        select(Season, TeamID, OppRecencyNetEff = RecencyNetEff),
-      by = c("Season", "OpponentID" = "TeamID")
+      RecencyOffEffDiff = Team1_RecencyOffEff - Team2_RecencyOffEff,
+      RecencyDefEffDiff = Team1_RecencyDefEff - Team2_RecencyDefEff,
+      RecencyNetEffDiff = Team1_RecencyNetEff - Team2_RecencyNetEff,
+      RecencySOSDiff = Team1_RecencySOS - Team2_RecencySOS,
+      RecencyAdjTempoDiff = Team1_RecencyAdjTempo - Team2_RecencyAdjTempo,
+      TrendNetEffDiff = Team1_TrendNetEff - Team2_TrendNetEff
     ) %>%
-    group_by(Season, TeamID) %>%
-    summarise(
-      RecencySOS = weighted_mean(OppRecencyNetEff, RecencyWeight),
-      .groups = "drop"
-    )
+    arrange(Season, Team1, Team2)
 
-  team_season_features_recency <- team_season_features_recency %>%
-    left_join(recency_sos, by = c("Season", "TeamID")) %>%
-    mutate(
-      TrendNetEff = RecencyNetEff - NetEff
-    )
-
-  return(team_season_features_recency)
+  return(matchup_training_data_recency)
 }
