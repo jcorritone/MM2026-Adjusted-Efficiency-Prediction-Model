@@ -11,8 +11,7 @@ fit_model_02b_adj_efficiency <- function(train_data) {
     drop_na()
 
   glm(
-    Outcome ~ SeedDiff + AdjNetEffDiff,
+    Outcome ~ AdjNetEffDiff,
     data = model_data,
-    family = binomial(link = "logit")
-  )
+    family = binomial(link = "logit"))
 }
