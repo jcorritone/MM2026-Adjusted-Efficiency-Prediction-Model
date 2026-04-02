@@ -1,3 +1,4 @@
-MM2026-Adjusted-Efficiency-Prediction-Model
+MM2026-Prediction-Model
 
-The development of a predictive model for the 2026 March Madness tournament to be submitted to the UW-Madison Sports Analytics Club March Madness Data Challenge 2026. The process os centered on the development of a team strength metric that is used to develop probabilities of game outcomes.
+A predictive model for the 2026 March Madness tournament, developed for the UW-Madison Sports Analytics Club March Madness Data Challenge 2026. 
+
